@@ -1,0 +1,4 @@
+#ignoring data and R project files
+*.csv
+*.Rhistory
+*.Rproj.user/
