@@ -139,6 +139,7 @@ ui <- fluidPage(
         background-color: #A98DA9;
         cursor: pointer;
       }
+      
 
       .dashboard-card {
         background: white;
@@ -185,6 +186,19 @@ ui <- fluidPage(
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.18);
       }
+      
+      /* Mobile responsiveness for info tiles */
+      @media (max-width: 600px) {
+      .info-tile {
+        font-size: 22px;
+        padding: 18px;
+      }
+
+      .info-tile-container {
+        flex-direction: column !important;
+        gap: 15px !important;
+      }
+}
     "))
   ),
   
@@ -217,6 +231,7 @@ ui <- fluidPage(
     img(src = "proteomics_goal.png",
         style = "width:100%; border-radius:12px; margin-bottom:20px;"),
     div(
+      class = "info-tile-container",
       style = "display:flex; gap:20px; width:100%;",
       div(class = "info-tile", "~ 48,000\nUKB Participants"),
       div(class = "info-tile", "365\nInflammatory Proteins")
