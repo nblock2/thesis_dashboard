@@ -19,7 +19,7 @@ here::i_am("app.R")
 inflam_genes <- read_csv("proteomics_base_results.csv")
 
 # Bonferroni-style correction
-adjusted_p <- 0.05 / (10 * 365)
+adjusted_p <- 0.05 / (11 * 365)
 
 # Add significance + t-statistic + uppercase phenotype
 inflam_genes2 <- inflam_genes %>%
@@ -28,6 +28,9 @@ inflam_genes2 <- inflam_genes %>%
     statistic   = BETA / SE,
     Phenotype   = toupper(Phenotype)
   )
+
+#getting sig only dataset
+sig_only<-inflam_genes2 %>% filter(Significant==TRUE)
 
 # Identify proteins with at least 1 significant association
 sig_proteins <- inflam_genes2 %>%
@@ -71,7 +74,6 @@ tooltip_df <- expand.grid(Gene = row_names, Protein = col_names) %>%
 makeForestPlot <- function(selected_genes) {
   if (length(selected_genes) == 0) return(NULL)
   
-  # Filter to selected significant associations
   table_data <- inflam_genes2 %>%
     filter(Gene %in% selected_genes & Significant) %>%
     mutate(
@@ -87,7 +89,6 @@ makeForestPlot <- function(selected_genes) {
   
   if (nrow(table_data) == 0) return(NULL)
   
-  # Assign colors per gene
   unique_colors <- RColorBrewer::brewer.pal(max(3, length(selected_genes)), "Set2")
   color_map <- setNames(unique_colors, selected_genes)
   table_data$color <- unname(color_map[table_data$Gene])
@@ -104,17 +105,16 @@ makeForestPlot <- function(selected_genes) {
     mean      = table_data$mean,
     lower     = table_data$lower,
     upper     = table_data$upper,
+    xlab = "Normalized Protein Expression (NPX)",
     shapes_gp = fp_col,
     txt_gp    = fpTxtGp(label = gpar(fontsize = 12)),
-    title     = "Effect of Selected CHIP Mutations on Proteins"
+    title     = "Effect (NPX) of Selected CHIP Mutations\non Proteins"
   )
 }
 
 ##### creating UI #####
 
 ui <- fluidPage(
-  
-  # Setting global styles for dashboard
   
   tags$head(
     tags$style(HTML("
@@ -123,6 +123,7 @@ ui <- fluidPage(
         background-color: #F5F6FA;
       }
 
+      /* CHIP button */
       .chip-button {
         width: 100%;
         height: 130px;
@@ -139,8 +140,8 @@ ui <- fluidPage(
         background-color: #A98DA9;
         cursor: pointer;
       }
-      
 
+      /* Card styling */
       .dashboard-card {
         background: white;
         border-radius: 14px;
@@ -149,16 +150,52 @@ ui <- fluidPage(
         margin-bottom: 25px;
       }
 
+      /* Info tiles (default for Overview) */
       .info-tile {
         flex: 1;
         background-color: #BFDBFE;
         border-radius: 16px;
         padding: 25px;
         text-align: center;
-        font-size: 30px;
+        font-size: 24px;   /* Overview tiles */
         font-weight: 700;
         color: black;
         box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        white-space: pre-line;
+      }
+
+      /* Insight Cards (Results page) */
+      .results-tile {
+        font-size: 20px !important;
+        font-weight: 600;
+        text-align: left !important;
+        padding: 20px !important;
+      }
+
+      .insight-title {
+        font-weight: 700;
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+
+      .insight-text {
+        font-size: 18px;
+        margin: 0;
+      }
+
+      /* Tile container */
+      .info-tile-container {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        width: 100%;
+      }
+
+      @media (max-width: 600px) {
+        .info-tile-container {
+          flex-direction: column;
+          gap: 15px;
+        }
       }
 
       .section-title {
@@ -167,7 +204,6 @@ ui <- fluidPage(
         margin-bottom: 15px;
       }
 
-      /* Footer button styling */
       .footer-button {
         display: inline-block;
         padding: 12px 22px;
@@ -186,108 +222,165 @@ ui <- fluidPage(
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.18);
       }
-      
-      /* Mobile responsiveness for info tiles */
-      @media (max-width: 600px) {
-      .info-tile {
-        font-size: 22px;
-        padding: 18px;
-      }
-
-      .info-tile-container {
-        flex-direction: column !important;
-        gap: 15px !important;
-      }
-}
     "))
   ),
   
-  # setting title
-  div(
-    class = "dashboard-card",
-    h1("CHIP Mutations and the Inflammatory Proteome",
-       style = "text-align:center; font-weight:800; margin-bottom:10px;"),
-    p("Interactive dashboard exploring gene–protein associations in CHIP carriers.",
-      style = "text-align:center; font-size:18px; margin-top:-10px;")
-  ),
-  
-  # CHIP definition button
-  div(
-    class = "dashboard-card",
-    actionButton("chip_def_btn", "What is CHIP?", class = "chip-button"),
-    conditionalPanel(
-      condition = "input.chip_def_btn % 2 == 1",
-      div(style="margin-top:20px;",
-          h4("CHIP: Clonal Hematopoiesis of Indeterminate Potential"),
-          p("CHIP mutations are somatic mutations in hematopoietic stem cells that lead to clonal expansion. They are associated with increased cardiovascular disease and acute myeloid leukemia risk.")
+  tabsetPanel(
+    
+    ### --- TAB 1: OVERVIEW --- ###
+    tabPanel("Overview",
+             div(
+               class = "dashboard-card",
+               h1("CHIP Mutations and the Inflammatory Proteome",
+                  style = "text-align:center; font-weight:800; margin-bottom:10px;"),
+               p("Interactive dashboard exploring gene–protein associations in CHIP carriers.",
+                 style = "text-align:center; font-size:18px; margin-top:-10px;")
+             ),
+             
+             div(
+               class = "dashboard-card",
+               actionButton("chip_def_btn", "What is CHIP?", class = "chip-button"),
+               conditionalPanel(
+                 condition = "input.chip_def_btn % 2 == 1",
+                 div(style="margin-top:20px;",
+                     h4("CHIP: Clonal Hematopoiesis of Indeterminate Potential"),
+                     p("CHIP mutations are somatic mutations in hematopoietic stem cells that lead to clonal expansion. They are associated with increased cardiovascular disease and acute myeloid leukemia risk.")
+                 )
+               )
+             ),
+             
+             div(
+               class = "dashboard-card",
+               div(class="section-title", "Study Overview"),
+               img(src = "proteomics_goal.png",
+                   style = "width:100%; border-radius:12px; margin-bottom:20px;"),
+               div(
+                 class = "info-tile-container",
+                 div(class = "info-tile", "~ 46,000\nUKB Participants"),
+                 div(class = "info-tile", "365\nInflammatory Proteins")
+               )
+             )
+    ),
+    
+    ### --- TAB 2: RESULTS --- ###
+    tabPanel("Results",
+             div(
+               class = "dashboard-card",
+               div(class="section-title", "Results"),
+               
+               girafeOutput("heatmap", width = "100%"),
+               tags$p(
+                 style = "text-align:center; font-size:16px; margin-top:10px;",
+                 "Figure 1. Heatmap showing gene–protein associations in genes with CHIP mutations."
+               ),
+               
+               div(
+                 class = "dashboard-card",
+                 h4("Selected Genes"),
+                 selectInput(
+                   "selectedGenes", NULL,
+                   choices = sort(unique(inflam_genes2$Gene[inflam_genes2$Significant])),
+                   multiple = TRUE
+                 ),
+                 helpText("Click cells in the heatmap to populate this list or select genes from dropdown menu.")
+               ),
+               
+               plotOutput("forestPlot", height = "900px"),
+               tags$p(
+                 style = "text-align:center; font-size:16px; margin-top:10px;",
+                 "Figure 2. Forest plot of estimated effect sizes for CHIP mutations."
+               )
+             ),
+             
+             ### --- UPDATED MAIN TAKEAWAYS (Insight Cards) --- ###
+             div(
+               class = "dashboard-card",
+               div(class="section-title", "Main Takeaways"),
+               
+               div(
+                 class = "info-tile-container",
+                 
+                 # Insight Card 1
+                 div(
+                   class = "info-tile results-tile",
+                   tags$div(class="insight-title",
+                            "JAK2 drives the strongest inflammatory signature"),
+                   tags$p(
+                     class="insight-text",
+                     "Out of CHIP mutations across all genes, those in JAK2 are estimated to upregulate the greatest number of circulating inflammation proteins."
+                   )
+                 ),
+                 
+                 # Insight Card 2
+                 div(
+                   class = "info-tile results-tile",
+                   tags$div(class="insight-title",
+                            "Inflammation may link CHIP to cardiovascular risk"),
+                   tags$p(
+                     class="insight-text",
+                     "CHIP mutation–associated increases in circulating inflammation proteins could be contributing to elevated cardiovascular disease risk."
+                   )
+                 )
+               )
+             )
+    ),
+    
+    ### --- TAB 3: DATASET INFORMATION --- ###
+    tabPanel("Dataset Information",
+             div(
+               class = "dashboard-card",
+               h2("Dataset Information"),
+               
+               h3("Dataset Description"),
+               p("This dashboard analyzes associations between CHIP mutations and inflammatory protein levels in UK Biobank (UKB) participants. All UKB data is confidential, therefore all regression analyses were conducted directly on their platform. Additionally, our regression data is not publicly available as we are awaiting publication.
+       The proteomics data used for this analysis are from Olink assays of blood plasma samples (Sun et al., 2023). The dataset used to generate this dashboard includes regression results for gene–protein pairs, significance indicators, and derived statistics used for visualization. Sources for the cohort and proteomics data are linked below."),
+               
+               br(),
+               
+               h3("Data Overview"),
+               tableOutput("data_overview"),
+               
+               br(),
+               
+               h3("Significant Associations by Gene"),
+               tableOutput("sig_by_gene"),
+               
+               br(),
+               
+               h3("Sources"),
+               div(style = "display:flex; gap:20px; margin-top:10px;",
+                   tags$a(
+                     href = "https://www.nature.com/articles/s41586-018-0579-z",
+                     target = "_blank",
+                     class = "footer-button",
+                     "UK Biobank Cohort Project"
+                   ),
+                   tags$a(
+                     href = "https://www.nature.com/articles/s41586-023-06592-6",
+                     target = "_blank",
+                     class = "footer-button",
+                     "UK Biobank Proteomics Project"
+                   )
+               )
+             )
+    ),
+    
+    div(
+      style = "text-align:center; margin-top:40px; margin-bottom:30px;",
+      tags$a(
+        href = "https://github.com/nblock2/thesis_dashboard",
+        class = "footer-button",
+        target = "_blank",
+        "View this Project on GitHub"
       )
     )
-  ),
-  
-  # Study overview figure
-  div(
-    class = "dashboard-card",
-    div(class="section-title", "Study Overview"),
-    img(src = "proteomics_goal.png",
-        style = "width:100%; border-radius:12px; margin-bottom:20px;"),
-    div(
-      class = "info-tile-container",
-      style = "display:flex; gap:20px; width:100%;",
-      div(class = "info-tile", "~ 48,000\nUKB Participants"),
-      div(class = "info-tile", "365\nInflammatory Proteins")
-    )
-  ),
-  
-  # Interactive results heatmap and forestplot
-  div(
-    class = "dashboard-card",
-    div(class="section-title", "Results"),
-    
-    # Heatmap
-    girafeOutput("heatmap", width = "100%"),
-    tags$p(
-      style = "text-align:center; font-size:16px; margin-top:10px;",
-      "Figure 1. Heatmap showing gene–protein associations in genes with CHIP mutations."
-    ),
-    
-    # interactive gene dropdown select
-    div(
-      class = "dashboard-card",
-      h4("Selected Genes"),
-      selectInput(
-        "selectedGenes", NULL,
-        choices = sort(unique(inflam_genes2$Gene[inflam_genes2$Significant])),
-        multiple = TRUE
-      ),
-      helpText("Click cells in the heatmap to populate this list or select genes from dropdown menu.")
-    ),
-    
-    # forestplot using function
-    plotOutput("forestPlot", height = "900px"),
-    tags$p(
-      style = "text-align:center; font-size:16px; margin-top:10px;",
-      "Figure 2. Forest plot of estimated effect sizes for CHIP mutations."
-    )
-  ),
-  
-  # link to github with code
-  div(
-    style = "text-align:center; margin-top:40px; margin-bottom:30px;",
-    tags$a(
-      href = "https://github.com/nblock2/thesis_dashboard",
-      class = "footer-button",
-      target = "_blank",
-      "View this Project on GitHub"
-    )
-  )
-)
+  ))
 
 
 ##### Creating server #####
 
 server <- function(input, output, session) {
   
-  # interactive heatmap
   output$heatmap <- renderGirafe({
     
     df <- tooltip_df %>%
@@ -339,7 +432,6 @@ server <- function(input, output, session) {
     )
   })
   
-  # click on heatmap and update gene selector
   observeEvent(input$heatmap_selected, {
     req(input$heatmap_selected)
     
@@ -353,9 +445,28 @@ server <- function(input, output, session) {
     )
   })
   
-  # forestplot responsive to gene selector
   output$forestPlot <- renderPlot({
     makeForestPlot(input$selectedGenes)
+  })
+  
+  output$data_overview <- renderTable({
+    tibble::tibble(
+      Metric = c("Number of Participants", "Number of Significant Associations"),
+      Value = c(
+        as.integer(max(inflam_genes$N, na.rm = TRUE)),
+        as.integer(nrow(sig_only))
+      )
+    )
+  })
+  
+  output$sig_by_gene <- renderTable({
+    sig_only %>%
+      group_by(Gene) %>%
+      summarise(
+        Significant_Associations = n(),
+        .groups = "drop"
+      ) %>%
+      arrange(desc(Significant_Associations))
   })
 }
 
