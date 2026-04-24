@@ -29,7 +29,7 @@ inflam_genes2 <- inflam_genes %>%
     Phenotype   = toupper(Phenotype)
   )
 
-#getting sig only dataset
+# getting sig only dataset
 sig_only<-inflam_genes2 %>% filter(Significant==TRUE)
 
 # Identify proteins with at least 1 significant association
@@ -141,7 +141,6 @@ ui <- fluidPage(
         cursor: pointer;
       }
 
-      /* Card styling */
       .dashboard-card {
         background: white;
         border-radius: 14px;
@@ -149,8 +148,7 @@ ui <- fluidPage(
         box-shadow: 0 3px 10px rgba(0,0,0,0.12);
         margin-bottom: 25px;
       }
-
-      /* Info tiles (default for Overview) */
+      
       .info-tile {
         flex: 1;
         background-color: #BFDBFE;
@@ -164,7 +162,6 @@ ui <- fluidPage(
         white-space: pre-line;
       }
 
-      /* Insight Cards (Results page) */
       .results-tile {
         font-size: 20px !important;
         font-weight: 600;
@@ -183,7 +180,6 @@ ui <- fluidPage(
         margin: 0;
       }
 
-      /* Tile container */
       .info-tile-container {
         display: flex;
         flex-direction: row;
@@ -227,7 +223,7 @@ ui <- fluidPage(
   
   tabsetPanel(
     
-    ### --- TAB 1: OVERVIEW --- ###
+    # Creating Overview tab
     tabPanel("Overview",
              div(
                class = "dashboard-card",
@@ -262,7 +258,7 @@ ui <- fluidPage(
              )
     ),
     
-    ### --- TAB 2: RESULTS --- ###
+    # Creating results tab
     tabPanel("Results",
              div(
                class = "dashboard-card",
@@ -292,7 +288,7 @@ ui <- fluidPage(
                )
              ),
              
-             ### --- UPDATED MAIN TAKEAWAYS (Insight Cards) --- ###
+             # adding main takeaways cards
              div(
                class = "dashboard-card",
                div(class="section-title", "Main Takeaways"),
@@ -300,7 +296,7 @@ ui <- fluidPage(
                div(
                  class = "info-tile-container",
                  
-                 # Insight Card 1
+                 # takeaway card 1
                  div(
                    class = "info-tile results-tile",
                    tags$div(class="insight-title",
@@ -311,7 +307,7 @@ ui <- fluidPage(
                    )
                  ),
                  
-                 # Insight Card 2
+                 # takeaway card 2
                  div(
                    class = "info-tile results-tile",
                    tags$div(class="insight-title",
@@ -325,7 +321,7 @@ ui <- fluidPage(
              )
     ),
     
-    ### --- TAB 3: DATASET INFORMATION --- ###
+    # Dataset information tab
     tabPanel("Dataset Information",
              div(
                class = "dashboard-card",
