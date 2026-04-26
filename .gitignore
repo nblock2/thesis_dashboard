@@ -5,3 +5,4 @@
 rsconnect/
 *.html
 *.RData
+.Rproj.user

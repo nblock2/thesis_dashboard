@@ -284,7 +284,9 @@ ui <- fluidPage(
                plotOutput("forestPlot", height = "900px"),
                tags$p(
                  style = "text-align:center; font-size:16px; margin-top:10px;",
-                 "Figure 2. Forest plot of estimated effect sizes for CHIP mutations."
+                 "Figure 2. Forest plot of estimated effect sizes for CHIP mutations.",
+                 tags$br(),
+                 tags$b("NPX"), " = normalized protein expression, a measure of protein abundance used in Olink proteomics, where a 1 unit change indicates a 100% change in protein abundance."
                )
              ),
              
